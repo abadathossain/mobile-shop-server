@@ -3,7 +3,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const app = express();
 require("dotenv").config();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
@@ -20,11 +20,28 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const userCollection = client.db("mobile-shop").collection("users");
+const mobileCollection = client.db("mobile-shop").collection("products");
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    // create user
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // create product
+
+    app.post("/add-products", async (req, res) => {
+      const product = req.body;
+      const result = await mobileCollection.insertOne(product);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
