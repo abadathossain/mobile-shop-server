@@ -8,6 +8,33 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(cors());
 app.use(express.json());
+// token verification
+const verifyToken = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.send({ message: "No token" });
+  }
+  const token = authorization.split(" ")[1];
+  console.log(token);
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.send({ message: "Invalid token" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
+
+// verify seller
+const verifySeller = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = { email: email };
+  const user = await userCollection.findOne(query);
+  if (user?.role !== "seller") {
+    return res.send({ message: "forbideen access" });
+  }
+  next();
+};
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dxzduzz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -36,7 +63,6 @@ async function run() {
     });
 
     // create product
-
     app.post("/add-products", async (req, res) => {
       const product = req.body;
       const result = await mobileCollection.insertOne(product);
@@ -59,6 +85,15 @@ app.get("/", (req, res) => {
   res.send("Mobile shop is running");
 });
 
+// for jwt
+app.post("/jwt", async (req, res) => {
+  const userEmail = req.body;
+  const token = jwt.sign(userEmail, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "10d",
+  });
+  res.send({ token });
+  console.log("JWT email:", userEmail);
+});
 app.listen(port, () => {
   console.log(`Mobile shop is running on port:${port}`);
 });
