@@ -55,6 +55,14 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // get user with email
+    app.get("/user/:email", async (req, res) => {
+      const query = { email: req.params.email };
+      const result = await userCollection.findOne(query);
+      console.log("Token:", result);
+      res.send(result);
+    });
+
     // create user
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -63,7 +71,7 @@ async function run() {
     });
 
     // create product
-    app.post("/add-products", async (req, res) => {
+    app.post("/add-products", verifyToken, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await mobileCollection.insertOne(product);
       res.send(result);
