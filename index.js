@@ -55,6 +55,13 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // create user
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
     // get user with email
     app.get("/user/:email", async (req, res) => {
       const query = { email: req.params.email };
@@ -63,18 +70,68 @@ async function run() {
       res.send(result);
     });
 
-    // create user
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const result = await userCollection.insertOne(user);
-      res.send(result);
-    });
-
     // create product
     app.post("/add-products", verifyToken, verifySeller, async (req, res) => {
       const product = req.body;
       const result = await mobileCollection.insertOne(product);
       res.send(result);
+    });
+    // get product
+    app.get("/all-products", async (req, res) => {
+      const { title, sort, category, brand } = req.body;
+      const query = {};
+      if (title) {
+        query.title = { $regex: title, $options: "i" };
+      }
+      if (category) {
+        query.category = category;
+      }
+      if (category) {
+        query.brand = brand;
+      }
+      const sortOption = sort === "asc" ? 1 : -1;
+      const products = await mobileCollection
+        .find(query)
+        .sort({ price: sortOption })
+        .toArray();
+      res.send(products);
+    });
+
+    // Get all sellers
+    app.get("/users", async (req, res) => {
+      try {
+        const sellers = await userCollection.find().toArray();
+        res.status(200).json(sellers);
+      } catch (error) {
+        res.status(500).json({ message: "Error retrieving sellers", error });
+      }
+    });
+
+    // PUT route to update the seller status (approve/reject)
+    app.put("/users/:id/:status", async (req, res) => {
+      const { id, status } = req.params;
+      try {
+        if (!["approved", "rejected"].includes(status)) {
+          return res.status(400).json({ message: "Invalid status" });
+        }
+        // console.log(seller);
+        const seller = await userCollection.findOneAndUpdate({ id, status });
+
+        if (!seller) {
+          return res.status(404).json({ message: "Seller not found" });
+        }
+
+        // Update the seller status
+        seller.status = status;
+        await seller.save();
+
+        res.status(200).json({ message: `Seller ${status}`, seller });
+      } catch (error) {
+        console.error("Error updating seller:", error);
+        res
+          .status(500)
+          .json({ message: "Error updating seller", error: error.message });
+      }
     });
 
     // Send a ping to confirm a successful connection
