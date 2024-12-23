@@ -6,7 +6,12 @@ require("dotenv").config();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://gadget-shop-e9cb3.web.app",
+    optionsSuccessStatus: 200,
+  })
+);
 app.use(express.json());
 // token verification
 const verifyToken = (req, res, next) => {
