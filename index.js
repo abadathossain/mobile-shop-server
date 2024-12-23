@@ -8,7 +8,7 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: "https://gadget-shop-e9cb3.web.app",
+    origin: "http://localhost:5173",
     optionsSuccessStatus: 200,
   })
 );
